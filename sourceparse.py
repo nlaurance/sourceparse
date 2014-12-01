@@ -4,8 +4,13 @@ a personnal adaptation of pyclbr from the standard python lib
 __author__ = 'nlaurance'
 __licence__ = "MIT"
 
-from operator import itemgetter
 import tokenize
+
+
+def by_lineno(a, b):
+    return cmp(getattr(a, 'from_line', 0),
+               getattr(b, 'from_line', 0))
+
 
 class CodeChunk(object):
     """ base class to represent a Python source object
@@ -27,11 +32,12 @@ class CodeChunk(object):
         return []
 
     def __repr__(self):
-        return '{0}: from {1} to {2}\n' \
-               '\tdecorated from {3} to {1}' \
-            .format(self.name,
-                    self.from_line, self.to_line, self.decorated_from)
-
+        msg = '{0}: from {1} to {2}\n' \
+            .format(self.name, self.from_line, self.to_line)
+        if self.decorated_from:
+            msg += '\tdecorated from {0} to {1}' \
+                .format(self.decorated_from, self.from_line)
+        return msg
 
 class Class(CodeChunk):
     """ Class to represent a Python class.
@@ -45,21 +51,36 @@ class Class(CodeChunk):
 
 
 class Method(CodeChunk):
+    """ marker class for methods
+    """
 
-    def __init__(self, name, file_name, decorated_from, from_line):
-        super(Method, self).__init__(name, file_name, decorated_from, from_line)
-        self.klass = None
+
+class Function(CodeChunk):
+    """ marker class for module level function
+    """
 
 
 class CodeCollector(object):
 
     def __init__(self, filename):
         self.filename = filename
-        self.module_objects = {}
+        self.module_objects = []
         self.lines = self._readfile(filename)
         self.linegen = (l for l in self.lines)
 
+    @property
+    def classes(self):
+        if not self.module_objects:
+            self.parse()
+        return filter(lambda x: isinstance(x, Class),
+                      self.module_objects)
+
     def _readfile(self, filename):
+        """
+        can be overriden for other backends
+
+        :param filename: path of a python module
+        """
         with open(self.filename, 'r') as fh:
             return fh.readlines()
 
@@ -68,9 +89,8 @@ class CodeCollector(object):
 
     def parse(self):
         """
-        :return: parse the code and populate self.module_objects
+        parse the code and populate self.module_objects
         """
-        # fh = open(self.filename, 'r')
         g = tokenize.generate_tokens(self._lineread)
         stack = []
         decorated = False
@@ -78,7 +98,6 @@ class CodeCollector(object):
         try:
 
             for tokentype, token, start, _end, _line in g:
-                # print tokentype, token, start, _end, _line
 
                 if tokentype == tokenize.DEDENT:
                     lineno, thisindent = start
@@ -88,6 +107,7 @@ class CodeCollector(object):
                         if previous_obj is not None:
                             previous_obj.to_line = lineno - 1
                         del stack[-1]
+
                 if token == '@':
                     tokentype, decorator_name, start = g.next()[0:3]
                     if tokentype != tokenize.NAME:
@@ -96,7 +116,7 @@ class CodeCollector(object):
                         decorated_from = start[0]  # only the first lineno
                         decorated = True
 
-                if token == 'class':
+                elif token == 'class':
                     lineno, thisindent = start
 
                     # close previous nested classes and defs
@@ -112,7 +132,7 @@ class CodeCollector(object):
                         cur_class.decorated_from = decorated_from
 
                     if not stack:
-                        self.module_objects[class_name] = cur_class
+                        self.module_objects.append(cur_class)
                     stack.append((cur_class, thisindent))
 
                 elif token == 'def':
@@ -127,7 +147,7 @@ class CodeCollector(object):
                         cur_class = stack[-1][0]
                         if isinstance(cur_class, Class):
                             # it's a method
-                            cur_method = CodeChunk(func_name, self.filename, decorated, lineno)
+                            cur_method = Method(func_name, self.filename, decorated, lineno)
                             if decorated:
                                 decorated = False
                                 cur_method.decorated_from = decorated_from
@@ -137,26 +157,21 @@ class CodeCollector(object):
 
                     else:
                         # it's a function
-                        cur_function = CodeChunk(func_name, self.filename, decorated, lineno)
+                        cur_function = Function(func_name, self.filename, decorated, lineno)
                         if decorated:
                             decorated = False
                             cur_function.decorated_from = decorated_from
-                        self.module_objects[func_name] = cur_function
+                        self.module_objects.append(cur_function)
                         stack.append((cur_function, thisindent))  # Marker for nested fns
 
         except StopIteration:
-            pass
+            parser.module_objects.sort(by_lineno)
 
 
 parser = CodeCollector('lorem.py')
 parser.parse()
-
-def by_lineno(a, b):
-    return cmp(getattr(a, 'from_line', 0),
-               getattr(b, 'from_line', 0))
-
-objs = parser.module_objects.values()
-objs.sort(by_lineno)
+objs = parser.module_objects
+objs = parser.classes
 
 for obj in objs:
     print obj
