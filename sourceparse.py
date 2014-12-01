@@ -16,19 +16,22 @@ class CodeChunk(object):
     """ base class to represent a Python source object
     be it a class function or method
     """
-    def __init__(self, name, file_name, decorated_from, from_line):
+    def __init__(self, parser, name, file_name, decorated_from, from_line):
         self.name = name
         self.file = file_name
         self.decorated_from = decorated_from
         self.from_line = from_line
         self.to_line = 0
+        self.parser = parser
 
-    def source(self, lines):
-        return lines[self.from_line - 1:self.to_line]
+    @property
+    def source(self):
+        return self.parser.lines[self.from_line - 1:self.to_line]
 
-    def decorators(self, lines):
+    @property
+    def decorators(self):
         if self.decorated_from:
-            return lines[self.decorated_from - 1:self.from_line - 1]
+            return self.parser.lines[self.decorated_from - 1:self.from_line - 1]
         return []
 
     def __repr__(self):
@@ -42,8 +45,8 @@ class CodeChunk(object):
 class Class(CodeChunk):
     """ Class to represent a Python class.
     """
-    def __init__(self, name, file_name, decorated_from, from_line):
-        super(Class, self).__init__(name, file_name, decorated_from, from_line)
+    def __init__(self, parser, name, file_name, decorated_from, from_line):
+        super(Class, self).__init__(parser, name, file_name, decorated_from, from_line)
         self.methods = {}
 
     def _addmethod(self, name, obj):
@@ -126,7 +129,7 @@ class CodeCollector(object):
                     if tokentype != tokenize.NAME:
                         continue  # Syntax error
 
-                    cur_class = Class(class_name, self.filename, decorated, lineno)
+                    cur_class = Class(self, class_name, self.filename, decorated, lineno)
                     if decorated:
                         decorated = False
                         cur_class.decorated_from = decorated_from
@@ -147,7 +150,7 @@ class CodeCollector(object):
                         cur_class = stack[-1][0]
                         if isinstance(cur_class, Class):
                             # it's a method
-                            cur_method = Method(func_name, self.filename, decorated, lineno)
+                            cur_method = Method(self, func_name, self.filename, decorated, lineno)
                             if decorated:
                                 decorated = False
                                 cur_method.decorated_from = decorated_from
@@ -157,7 +160,7 @@ class CodeCollector(object):
 
                     else:
                         # it's a function
-                        cur_function = Function(func_name, self.filename, decorated, lineno)
+                        cur_function = Function(self, func_name, self.filename, decorated, lineno)
                         if decorated:
                             decorated = False
                             cur_function.decorated_from = decorated_from
@@ -175,12 +178,12 @@ objs = parser.classes
 
 for obj in objs:
     print obj
-    print obj.source(parser.lines)
-    print obj.decorators(parser.lines)
+    print obj.source
+    print obj.decorators
     if hasattr(obj, 'methods'):
         meths = obj.methods.values()
         meths.sort(by_lineno)
         for meth in meths:
             print meth
-            print meth.source(parser.lines)
-            print meth.decorators(parser.lines)
+            print meth.source
+            print meth.decorators
