@@ -1,10 +1,17 @@
 """
 a personnal adaptation of pyclbr from the standard python lib
+
+
+http://docutils.sourceforge.net/sandbox/davidg/docutils/readers/python/moduleparser.py
 """
 __author__ = 'nlaurance'
 __licence__ = "MIT"
 
 import tokenize
+import ast
+import re
+
+args_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
 
 
 def by_lineno(a, b):
@@ -52,15 +59,71 @@ class Class(CodeChunk):
     def _addmethod(self, name, obj):
         self.methods[name] = obj
 
+    @property
+    def docstring(self):
+        first_line = self.source[0]
+        indent = len(first_line) - len(first_line.lstrip())
+        dedented = [l[indent:] for l in self.source if not l.startswith('#')]
+        src = ''.join(dedented)
+        try:
+            parsed = ast.parse(src)
+        except:
+            print self.file
+        ast_def = [node for node in parsed.body if isinstance(node, ast.ClassDef)][0]
+        doc = ast.get_docstring(ast_def)
+        doc = doc if doc is not None else ""
+        return doc
 
 class Method(CodeChunk):
     """ marker class for methods
     """
+    @property
+    def docstring(self):
+        first_line = self.source[0]
+        indent = len(first_line) - len(first_line.lstrip())
+        dedented = [l[indent:] for l in self.source if not l.startswith('#')]
+        src = ''.join(dedented)
+        try:
+            parsed = ast.parse(src)
+        except:
+            print self.file
+        ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
+        doc = ast.get_docstring(ast_def)
+        doc = doc if doc is not None else ""
+        return doc
+
+    @property
+    def args(self):
+
+        """ returns a list of args names
+        ['arg1', 'arg2', 'adfd', 'azert']
+        """
+        arg_names = []
+        src = ''.join(self.source)
+        m = args_re.search(src)
+        if m is not None:
+            args = m.groups()[0]
+            for arg_line in args.split('\n'):
+                for arg_expr in arg_line.split(','):
+                    arg = arg_expr.split('=')[0].strip()
+                    if arg:
+                        arg_names.append(arg)
+        if 'self' in arg_names:
+            arg_names.remove('self')
+        return arg_names
 
 
-class Function(CodeChunk):
+class Function(Method):
     """ marker class for module level function
     """
+    @property
+    def docstring(self):
+        src = ''.join(self.source)
+        parsed = ast.parse(src)
+        ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
+        doc = ast.get_docstring(ast_def)
+        doc = doc if doc is not None else ""
+        return doc
 
 
 class CodeCollector(object):
@@ -68,7 +131,7 @@ class CodeCollector(object):
     def __init__(self, filename):
         self.filename = filename
         self.module_objects = []
-        self.lines = self._readfile(filename)
+        self.lines = self._readfile()
         self.linegen = (l for l in self.lines)
 
     @property
@@ -78,7 +141,7 @@ class CodeCollector(object):
         return filter(lambda x: isinstance(x, Class),
                       self.module_objects)
 
-    def _readfile(self, filename):
+    def _readfile(self):
         """
         can be overriden for other backends
 
@@ -180,6 +243,7 @@ for obj in objs:
     print obj
     print obj.source
     print obj.decorators
+    print obj.docstring
     if hasattr(obj, 'methods'):
         meths = obj.methods.values()
         meths.sort(by_lineno)
@@ -187,3 +251,5 @@ for obj in objs:
             print meth
             print meth.source
             print meth.decorators
+            print meth.docstring
+            print meth.args
