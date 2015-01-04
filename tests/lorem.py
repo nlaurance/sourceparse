@@ -23,14 +23,15 @@ class MixinUser(Sub2, Mixin):
     def method2(self):
         return
 
+# comment
 
 def my_function():
-    """Stand-alone function.
+    """ Stand-alone function.
     """
     return
 
 @deprecated
 def my_decorated_function():
-    """Stand-alone function.
+    """ Stand-alone function.
     """
     return

@@ -42,12 +42,13 @@ class CodeChunk(object):
         return []
 
     def __repr__(self):
-        msg = '{0}: from {1} to {2}\n' \
-            .format(self.name, self.from_line, self.to_line)
+        msg = '{0} {1}: from {2} to {3}\n' \
+            .format(self.__class__.__name__, self.name, self.from_line, self.to_line)
         if self.decorated_from:
             msg += '\tdecorated from {0} to {1}' \
                 .format(self.decorated_from, self.from_line)
         return msg
+
 
 class Class(CodeChunk):
     """ Class to represent a Python class.
@@ -56,7 +57,7 @@ class Class(CodeChunk):
         super(Class, self).__init__(parser, name, file_name, decorated_from, from_line)
         self.methods = {}
 
-    def _addmethod(self, name, obj):
+    def addmethod(self, name, obj):
         self.methods[name] = obj
 
     @property
@@ -65,17 +66,15 @@ class Class(CodeChunk):
         indent = len(first_line) - len(first_line.lstrip())
         dedented = [l[indent:] for l in self.source if not l.startswith('#')]
         src = ''.join(dedented)
-        try:
-            parsed = ast.parse(src)
-        except:
-            print self.file
+        parsed = ast.parse(src)
         ast_def = [node for node in parsed.body if isinstance(node, ast.ClassDef)][0]
         doc = ast.get_docstring(ast_def)
         doc = doc if doc is not None else ""
         return doc
 
+
 class Method(CodeChunk):
-    """ marker class for methods
+    """ class for methods
     """
     @property
     def docstring(self):
@@ -83,10 +82,7 @@ class Method(CodeChunk):
         indent = len(first_line) - len(first_line.lstrip())
         dedented = [l[indent:] for l in self.source if not l.startswith('#')]
         src = ''.join(dedented)
-        try:
-            parsed = ast.parse(src)
-        except:
-            print self.file
+        parsed = ast.parse(src)
         ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
         doc = ast.get_docstring(ast_def)
         doc = doc if doc is not None else ""
@@ -114,7 +110,7 @@ class Method(CodeChunk):
 
 
 class Function(Method):
-    """ marker class for module level function
+    """ class for module level function
     """
     @property
     def docstring(self):
@@ -141,11 +137,15 @@ class CodeCollector(object):
         return filter(lambda x: isinstance(x, Class),
                       self.module_objects)
 
-    def _readfile(self):
-        """
-        can be overriden for other backends
+    @property
+    def functions(self):
+        if not self.module_objects:
+            self.parse()
+        return filter(lambda x: isinstance(x, Function),
+                      self.module_objects)
 
-        :param filename: path of a python module
+    def _readfile(self):
+        """  can be overriden for other backends
         """
         with open(self.filename, 'r') as fh:
             return fh.readlines()
@@ -154,102 +154,96 @@ class CodeCollector(object):
         return self.linegen.next()
 
     def parse(self):
-        """
-        parse the code and populate self.module_objects
+        """ parse the code and populate self.module_objects
         """
         g = tokenize.generate_tokens(self._lineread)
         stack = []
         decorated = False
         decorated_from = 0
-        try:
 
-            for tokentype, token, start, _end, _line in g:
+        for tokentype, token, start, _end, _line in g:
 
-                if tokentype == tokenize.DEDENT:
-                    lineno, thisindent = start
-                    # close nested classes and defs
-                    while stack and stack[-1][1] >= thisindent:
-                        previous_obj = stack[-1][0]
-                        if previous_obj is not None:
-                            previous_obj.to_line = lineno - 1
-                        del stack[-1]
+            if tokentype == tokenize.DEDENT:
+                lineno, thisindent = start
+                # close nested classes and defs
+                while stack and stack[-1][1] >= thisindent:
+                    previous_obj = stack[-1][0]
+                    if previous_obj is not None:
+                        previous_obj.to_line = lineno - 1
+                    del stack[-1]
 
-                if token == '@':
-                    tokentype, decorator_name, start = g.next()[0:3]
-                    if tokentype != tokenize.NAME:
-                        continue  # Syntax error
-                    if not decorated:
-                        decorated_from = start[0]  # only the first lineno
-                        decorated = True
+            if token == '@':
+                tokentype, decorator_name, start = g.next()[0:3]
+                if tokentype != tokenize.NAME:
+                    continue  # Syntax error
+                if not decorated:
+                    decorated_from = start[0]  # only the first lineno
+                    decorated = True
 
-                elif token == 'class':
-                    lineno, thisindent = start
+            elif token == 'class':
+                lineno, thisindent = start
 
-                    # close previous nested classes and defs
-                    while stack and stack[-1][1] >= thisindent:
-                        del stack[-1]
-                    tokentype, class_name, start = g.next()[0:3]
-                    if tokentype != tokenize.NAME:
-                        continue  # Syntax error
+                # close previous nested classes and defs
+                while stack and stack[-1][1] >= thisindent:
+                    del stack[-1]
+                tokentype, class_name, start = g.next()[0:3]
+                if tokentype != tokenize.NAME:
+                    continue  # Syntax error
 
-                    cur_class = Class(self, class_name, self.filename, decorated, lineno)
-                    if decorated:
-                        decorated = False
-                        cur_class.decorated_from = decorated_from
+                cur_class = Class(self, class_name, self.filename, decorated, lineno)
+                if decorated:
+                    decorated = False
+                    cur_class.decorated_from = decorated_from
 
-                    if not stack:
-                        self.module_objects.append(cur_class)
-                    stack.append((cur_class, thisindent))
+                if not stack:
+                    self.module_objects.append(cur_class)
+                stack.append((cur_class, thisindent))
 
-                elif token == 'def':
-                    lineno, thisindent = start
-                    # close previous nested classes and defs
-                    while stack and stack[-1][1] >= thisindent:
-                        del stack[-1]
-                    tokentype, func_name, start = g.next()[0:3]
-                    if tokentype != tokenize.NAME:
-                        continue # Syntax error
-                    if stack:
-                        cur_class = stack[-1][0]
-                        if isinstance(cur_class, Class):
-                            # it's a method
-                            cur_method = Method(self, func_name, self.filename, decorated, lineno)
-                            if decorated:
-                                decorated = False
-                                cur_method.decorated_from = decorated_from
-                            cur_class._addmethod(func_name, cur_method)
-                            stack.append((cur_method, thisindent))  # Marker for nested fns
-                        # else it's a nested def
-
-                    else:
-                        # it's a function
-                        cur_function = Function(self, func_name, self.filename, decorated, lineno)
+            elif token == 'def':
+                lineno, thisindent = start
+                # close previous nested classes and defs
+                while stack and stack[-1][1] >= thisindent:
+                    del stack[-1]
+                tokentype, func_name, start = g.next()[0:3]
+                if tokentype != tokenize.NAME:
+                    continue  # Syntax error
+                if stack:
+                    cur_class = stack[-1][0]
+                    if isinstance(cur_class, Class):
+                        # it's a method
+                        cur_method = Method(self, func_name, self.filename, decorated, lineno)
                         if decorated:
                             decorated = False
-                            cur_function.decorated_from = decorated_from
-                        self.module_objects.append(cur_function)
-                        stack.append((cur_function, thisindent))  # Marker for nested fns
+                            cur_method.decorated_from = decorated_from
+                        cur_class.addmethod(func_name, cur_method)
+                        stack.append((cur_method, thisindent))  # Marker for nested fns
+                    # else it's a nested def
 
-        except StopIteration:
-            parser.module_objects.sort(by_lineno)
+                else:
+                    # it's a function
+                    cur_function = Function(self, func_name, self.filename, decorated, lineno)
+                    if decorated:
+                        decorated = False
+                        cur_function.decorated_from = decorated_from
+                    self.module_objects.append(cur_function)
+                    stack.append((cur_function, thisindent))  # Marker for nested fns
 
 
-parser = CodeCollector('lorem.py')
-parser.parse()
-objs = parser.module_objects
-objs = parser.classes
-
-for obj in objs:
-    print obj
-    print obj.source
-    print obj.decorators
-    print obj.docstring
-    if hasattr(obj, 'methods'):
-        meths = obj.methods.values()
-        meths.sort(by_lineno)
-        for meth in meths:
-            print meth
-            print meth.source
-            print meth.decorators
-            print meth.docstring
-            print meth.args
+# p = CodeCollector('lorem.py')
+# p.parse()
+# rs = p.classes
+#
+# for o in rs:
+#     print o
+#     print o.source
+#     print o.decorators
+#     print o.docstring
+#     if hasattr(o, 'methods'):
+#         meths = o.methods.values()
+#         meths.sort(by_lineno)
+#         for meth in meths:
+#             print meth
+#             print meth.source
+#             print meth.decorators
+#             print meth.docstring
+#             print meth.args
