@@ -2,23 +2,15 @@ import os
 
 from setuptools import setup, find_packages
 
+
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
 long_description = (
     '\n.. contents::\n\n' +
     'Detailed Documentation\n' +
-    '**********************\n\n'
-    # read('README.txt')
-    + '\n\n' +
-    'Contributors\n' +
-    '************\n\n'
-    # read('Contributors.txt')
-    + '\n' +
-    'Change history\n' +
-    '**************\n\n'
-    # read('CHANGES.txt')
-    + '\n'
+    '**********************\n\n' +
+    read('README.md')
     )
 
 setup(
@@ -33,13 +25,13 @@ setup(
     zip_safe=True,
     include_package_data=True,
     tests_require=["nose"],
-    test_suite = 'nose.collector',
-    keywords = [
+    test_suite='nose.collector',
+    keywords=[
         'source code', 'analyzer'
     ],
     long_description=long_description,
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers = [
+    classifiers=[
         'Development Status :: 4 - Beta',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',
