@@ -9,7 +9,6 @@ class TestParser(unittest.TestCase):
     def setUp(self):
         filename = os.path.join(os.path.dirname(__file__), 'lorem.py')
         self.parser = CodeCollector(filename)
-        self.parser.parse()
         self.classes = self.parser.classes
         self.functions = self.parser.functions
 

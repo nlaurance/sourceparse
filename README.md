@@ -48,10 +48,6 @@ let's instantiate a parser, normally we would pass a path to the file to analyze
 ```python
 >>> parser=CodeCollector("source")
 ```
-first we need to parse the file
-```python
->>> parser.parse()
-```
 we can now access a list of the classes defined in the module
 ```python
 >>> parser.classes

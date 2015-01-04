@@ -1,6 +1,5 @@
 """
-a personnal adaptation of pyclbr from the standard python lib
-
+a personal adaptation of pyclbr from the standard python lib
 
 http://docutils.sourceforge.net/sandbox/davidg/docutils/readers/python/moduleparser.py
 """
@@ -12,11 +11,6 @@ import ast
 import re
 
 args_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
-
-
-def by_lineno(a, b):
-    return cmp(getattr(a, 'from_line', 0),
-               getattr(b, 'from_line', 0))
 
 
 class CodeChunk(object):
@@ -125,6 +119,7 @@ class CodeCollector(object):
         self.module_objects = []
         self.lines = self._readfile()
         self.linegen = (l for l in self.lines)
+        self.parse()
 
     @property
     def classes(self):
@@ -223,23 +218,3 @@ class CodeCollector(object):
                         cur_function.decorated_from = decorated_from
                     self.module_objects.append(cur_function)
                     stack.append((cur_function, thisindent))  # Marker for nested fns
-
-
-# p = CodeCollector('lorem.py')
-# p.parse()
-# rs = p.classes
-#
-# for o in rs:
-#     print o
-#     print o.source
-#     print o.decorators
-#     print o.docstring
-#     if hasattr(o, 'methods'):
-#         meths = o.methods.values()
-#         meths.sort(by_lineno)
-#         for meth in meths:
-#             print meth
-#             print meth.source
-#             print meth.decorators
-#             print meth.docstring
-#             print meth.args
