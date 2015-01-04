@@ -32,23 +32,30 @@ let's say we want to analyze a source file like this one
 ... '''
 ```
 
+```python
 >>> from sourceparse import CodeCollector
+```
 
 for the purpose of this documentation we'll override the _readfile method
 
+```python
 >>> def override(foo): return [s+'\n' for s in source.split('\n')]
 ...
-
 >>> original = CodeCollector._readfile
 >>> CodeCollector._readfile=override
+```
 
 let's instantiate a parser, normally we would pass a path to the file to analyze
 
+```python
 >>> parser=CodeCollector("source")
+```
 
 first we need to parse the file
 
+```python
 >>> parser.parse()
+```
 
 >>> parser.classes
 [Class MixinUser: from 2 to 18
@@ -62,5 +69,6 @@ first we need to parse the file
 
 
 let's put the parser back to normal
-
+```python
 >>> CodeCollector._readfile = original
+```
