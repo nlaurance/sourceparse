@@ -5,6 +5,7 @@ a personal adaptation of pyclbr from the standard python lib
 
 let's say we want to analyze a source file like this one
 
+```python
 >>> source = '''
 ... class MixinUser(Sub2, Mixin):
 ...     """Overrides method1 and method2
@@ -29,6 +30,7 @@ let's say we want to analyze a source file like this one
 ...     """
 ...     return
 ... '''
+```
 
 >>> from sourceparse import CodeCollector
 
