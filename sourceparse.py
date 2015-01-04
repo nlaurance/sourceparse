@@ -55,10 +55,7 @@ class Class(CodeChunk):
     """
     def __init__(self, parser, name, file_name, decorated_from, from_line):
         super(Class, self).__init__(parser, name, file_name, decorated_from, from_line)
-        self.methods = {}
-
-    def addmethod(self, name, obj):
-        self.methods[name] = obj
+        self.methods = []
 
     @property
     def docstring(self):
@@ -90,7 +87,6 @@ class Method(CodeChunk):
 
     @property
     def args(self):
-
         """ returns a list of args names
         ['arg1', 'arg2', 'adfd', 'azert']
         """
@@ -215,7 +211,7 @@ class CodeCollector(object):
                         if decorated:
                             decorated = False
                             cur_method.decorated_from = decorated_from
-                        cur_class.addmethod(func_name, cur_method)
+                        cur_class.methods.append(cur_method)
                         stack.append((cur_method, thisindent))  # Marker for nested fns
                     # else it's a nested def
 

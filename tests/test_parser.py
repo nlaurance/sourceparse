@@ -24,7 +24,7 @@ class TestParser(unittest.TestCase):
         """ we find classes lines
         """
         got = [(c.from_line, c.to_line) for c in self.classes]
-        expected = [(3, 9), (10, 13), (14, 27)]
+        expected = [(3, 11), (12, 15), (16, 33)]
         self.assertEquals(got, expected)
 
     def testClassesDecorators(self):
@@ -32,6 +32,48 @@ class TestParser(unittest.TestCase):
         """
         got = [c.decorators for c in self.classes]
         expected = [['@decorated(somehow)\n', '@extra\n'], [], []]
+        self.assertEquals(got, expected)
+
+    def testClassesDocstrings(self):
+        """ we find classes docstrings
+        """
+        got = [c.docstring for c in self.classes]
+        expected = ['This is the base class.\n    ',
+                    'This is the first subclass.\n    ',
+                    'Overrides method1 and method2\n    ']
+        self.assertEquals(got, expected)
+
+    def testClassesMethods(self):
+        """ we find classes methods
+        """
+        got = [m.name for c in self.classes for m in c.methods]
+        expected = ['method1', 'method1', 'method2']
+        self.assertEquals(got, expected)
+
+    def testClassesMethodsDocstrings(self):
+        """ we find classes methods docstrings
+        """
+        classes_methods = [c.methods for c in self.classes]
+        got = [m.docstring for cm in classes_methods for m in cm]
+        expected = ['method1 of Base\n    ',
+                    'method1 of MixinUser\n    ',
+                    'method2 of MixinUser\n    ']
+        self.assertEquals(got, expected)
+
+    def testClassesMethodsArgs(self):
+        """ we find classes methods args
+        """
+        classes_methods = [c.methods for c in self.classes]
+        got = [m.args for cm in classes_methods for m in cm]
+        expected = [[], ['foo'], ['foo', 'bar']]
+        self.assertEquals(got, expected)
+
+    def testClassesMethodsLines(self):
+        """ we find classes methods lines
+        """
+        classes_methods = [c.methods for c in self.classes]
+        got = [(m.from_line, m.to_line) for cm in classes_methods for m in cm]
+        expected = [(7, 11), (20, 24), (27, 33)]
         self.assertEquals(got, expected)
 
     def testFunctions(self):
@@ -45,7 +87,7 @@ class TestParser(unittest.TestCase):
         """ we find functions lines
         """
         got = [(f.from_line, f.to_line) for f in self.functions]
-        expected = [(28, 32), (34, 37)]
+        expected = [(34, 38), (40, 43)]
         self.assertEquals(got, expected)
 
     def testFunctionsDecorators(self):
@@ -53,4 +95,19 @@ class TestParser(unittest.TestCase):
         """
         got = [f.decorators for f in self.functions]
         expected = [[], ['@deprecated\n']]
+        self.assertEquals(got, expected)
+
+    def testFunctionsDocstrings(self):
+        """ we find functions docstrings
+        """
+        got = [f.docstring for f in self.functions]
+        expected = ['Stand-alone function.\n    ',
+                    'Another stand-alone function.\n    ']
+        self.assertEquals(got, expected)
+
+    def testFunctionsArgs(self):
+        """ we find functions args
+        """
+        got = [f.args for f in self.functions]
+        expected = [['foo'], ['foo', 'bar']]
         self.assertEquals(got, expected)
