@@ -43,15 +43,29 @@ for the purpose of this documentation we'll override the _readfile method::
     >>> CodeCollector._readfile=override
 
 
+
+instanciation
+-------------
+
 let's instantiate a parser, normally we would pass a path to the file to analyze::
 
     >>> parser=CodeCollector("source")
+
+Access to members
+-----------------
+
+Classes
+~~~~~~~
 
 we can now access a list of the classes defined in the module::
 
     >>> parser.classes
     [Class MixinUser: from 2 to 19
     ]
+
+
+Methods
+~~~~~~~
 
 each class::
 
@@ -116,6 +130,9 @@ and its complete source, excluding decorators::
      '\n']
 
 .. note:: The inline comment at the same level is included
+
+Functions
+~~~~~~~~~
 
 the module functions provide the same features::
 
