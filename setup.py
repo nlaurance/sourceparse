@@ -12,7 +12,7 @@ long_description = (
 
 setup(
     name="sourceparse",
-    version="0.2.0",
+    version="0.2.3",
     description="utility to inspect python source codes",
     licence="MIT",
     author="Nicolas Laurance",
