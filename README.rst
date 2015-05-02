@@ -114,7 +114,7 @@ arguments, excluding self::
     >>> m2.args
     ['foo']
 
-and keyworf arguments::
+and keyword arguments::
 
     >>> m2.kwargs
     {'bar': 'None'}
