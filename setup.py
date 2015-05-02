@@ -10,7 +10,7 @@ long_description = (
     '\n.. contents::\n\n' +
     'Detailed Documentation\n' +
     '**********************\n\n' +
-    read('README.md')
+    read('README.rst')
     )
 
 setup(

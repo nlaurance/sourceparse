@@ -38,7 +38,7 @@ class CodeChunk(object):
         msg = '{0} {1}: from {2} to {3}\n' \
             .format(self.__class__.__name__, self.name, self.from_line, self.to_line)
         if self.decorated_from:
-            msg += '\tdecorated from {0} to {1}' \
+            msg += '    decorated from {0} to {1}' \
                 .format(self.decorated_from, self.from_line)
         return msg
 
