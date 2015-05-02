@@ -7,15 +7,12 @@ def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
 long_description = (
-    '\n.. contents::\n\n' +
-    'Detailed Documentation\n' +
-    '**********************\n\n' +
     read('README.rst')
     )
 
 setup(
     name="sourceparse",
-    version="0.1",
+    version="0.2.0",
     description="utility to inspect python source codes",
     licence="MIT",
     author="Nicolas Laurance",
