@@ -1,3 +1,5 @@
+.. image:: https://travis-ci.org/nlaurance/sourceparse.svg?branch=master
+    :target: https://travis-ci.org/nlaurance/sourceparse
 
 sourceparse
 ===========
