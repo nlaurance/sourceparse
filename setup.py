@@ -16,13 +16,13 @@ long_description = (
 setup(
     name="sourceparse",
     version="0.1",
-    description="utlity to inspect python source codes",
+    description="utility to inspect python source codes",
     licence="MIT",
     author="Nicolas Laurance",
     author_email="nicolas[dot]laurance[at]gmail[dot]com",
     url="https://github.com/nlaurance/sourceparse",
     packages=find_packages(exclude=['ez_setup', 'tests']),
-    zip_safe=True,
+    zip_safe=False,
     include_package_data=True,
     tests_require=["nose"],
     test_suite='nose.collector',
@@ -40,4 +40,3 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
 )
-

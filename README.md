@@ -17,7 +17,7 @@ let's say we want to analyze a source file like this one
 ...
 ...     @manytimes
 ...     @decorated
-...     def method2(self, foo, bar):
+...     def method2(self, foo, bar=None):
 ...         """ method2 of MixinUser
 ...         """
 ...         return
@@ -29,11 +29,13 @@ let's say we want to analyze a source file like this one
 ...     """
 ...     return
 ... '''
+
 ```
 
 ```python
 >>> from sourceparse import CodeCollector
 >>> from pprint import pprint
+
 ```
 
 for the purpose of this documentation we'll override the _readfile method
@@ -42,21 +44,26 @@ for the purpose of this documentation we'll override the _readfile method
 ...
 >>> original = CodeCollector._readfile
 >>> CodeCollector._readfile=override
+
 ```
 
 let's instantiate a parser, normally we would pass a path to the file to analyze
+
 ```python
 >>> parser=CodeCollector("source")
+
 ```
 we can now access a list of the classes defined in the module
 ```python
 >>> parser.classes
 [Class MixinUser: from 2 to 18
 ]
+
 ```
 each class
 ```python
 >>> mix = parser.classes[0]
+
 ```
 can list its methods
 ```python
@@ -64,40 +71,48 @@ can list its methods
 [Method method1: from 5 to 9
 , Method method2: from 12 to 18
 	decorated from 10 to 12]
+
 ```
 each method
 ```python
 >>> m2 = mix.methods[1]
+
 ```
 has a name
 ```python
 >>> m2.name
 'method2'
+
 ```
 a start line in the file
 ```python
 >>> m2.from_line
 12
+
 ```
 an end line
 ```python
 >>> m2.to_line
 18
+
 ```
 wa can access its docstring
 ```python
 >>> m2.docstring
 'method2 of MixinUser\n    '
+
 ```
 decorators
 ```python
 >>> m2.decorators
 ['    @manytimes\n', '    @decorated\n']
+
 ```
 arguments, excluding self
 ```python
 >>> m2.args
 ['foo', 'bar']
+
 ```
 and its complete source, excluding decorators
 ```python
@@ -109,6 +124,7 @@ and its complete source, excluding decorators
  '\n',
  '# comment\n',
  '\n']
+
 ```
 the module functions provide the same features
 ```python
@@ -139,4 +155,5 @@ the module functions provide the same features
 let's put the parser back to normal
 ```python
 >>> CodeCollector._readfile = original
+
 ```

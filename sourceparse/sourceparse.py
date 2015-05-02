@@ -3,14 +3,13 @@ a personal adaptation of pyclbr from the standard python lib
 
 http://docutils.sourceforge.net/sandbox/davidg/docutils/readers/python/moduleparser.py
 """
-__author__ = 'nlaurance'
-__licence__ = "MIT"
 
 import tokenize
 import ast
 import re
 
 args_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
+kwargs_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
 
 
 class CodeChunk(object):
@@ -79,24 +78,37 @@ class Method(CodeChunk):
         doc = doc if doc is not None else ""
         return doc
 
-    @property
-    def args(self):
-        """ returns a list of args names
-        ['arg1', 'arg2', 'adfd', 'azert']
-        """
+    def _all_args(self):
         arg_names = []
+        kwargs = {}
         src = ''.join(self.source)
         m = args_re.search(src)
         if m is not None:
             args = m.groups()[0]
             for arg_line in args.split('\n'):
                 for arg_expr in arg_line.split(','):
-                    arg = arg_expr.split('=')[0].strip()
-                    if arg:
-                        arg_names.append(arg)
+                    with_default = arg_expr.split('=')
+                    if len(with_default) > 1:
+                        kwargs[with_default[0].strip()] = with_default[1].strip()
+                    else:
+                        arg_names.append(with_default[0].strip())
         if 'self' in arg_names:
             arg_names.remove('self')
-        return arg_names
+        return arg_names, kwargs
+
+    @property
+    def args(self):
+        """ returns a list of args names
+        ['arg1', 'arg2', 'adfd', 'azert']
+        """
+        return self._all_args()[0]
+
+    @property
+    def kwargs(self):
+        """ returns a dict of kwarg: default
+        {'arg1':'value', 'arg2':'value', }
+        """
+        return self._all_args()[1]
 
 
 class Function(Method):
@@ -106,7 +118,8 @@ class Function(Method):
     def docstring(self):
         src = ''.join(self.source)
         parsed = ast.parse(src)
-        ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
+        ast_def = [node for node in parsed.body
+                   if isinstance(node, ast.FunctionDef)][0]
         doc = ast.get_docstring(ast_def)
         doc = doc if doc is not None else ""
         return doc
@@ -123,15 +136,11 @@ class CodeCollector(object):
 
     @property
     def classes(self):
-        if not self.module_objects:
-            self.parse()
         return filter(lambda x: isinstance(x, Class),
                       self.module_objects)
 
     @property
     def functions(self):
-        if not self.module_objects:
-            self.parse()
         return filter(lambda x: isinstance(x, Function),
                       self.module_objects)
 
@@ -144,15 +153,16 @@ class CodeCollector(object):
     def _lineread(self):
         return self.linegen.next()
 
+    # pylint:disable = too-many-branches
     def parse(self):
         """ parse the code and populate self.module_objects
         """
-        g = tokenize.generate_tokens(self._lineread)
+        token_generator = tokenize.generate_tokens(self._lineread)
         stack = []
         decorated = False
         decorated_from = 0
 
-        for tokentype, token, start, _end, _line in g:
+        for tokentype, token, start, _end, _line in token_generator:
 
             if tokentype == tokenize.DEDENT:
                 lineno, thisindent = start
@@ -164,7 +174,7 @@ class CodeCollector(object):
                     del stack[-1]
 
             if token == '@':
-                tokentype, decorator_name, start = g.next()[0:3]
+                tokentype, decorator_name, start = token_generator.next()[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
                 if not decorated:
@@ -177,7 +187,7 @@ class CodeCollector(object):
                 # close previous nested classes and defs
                 while stack and stack[-1][1] >= thisindent:
                     del stack[-1]
-                tokentype, class_name, start = g.next()[0:3]
+                tokentype, class_name, start = token_generator.next()[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
 
@@ -195,21 +205,22 @@ class CodeCollector(object):
                 # close previous nested classes and defs
                 while stack and stack[-1][1] >= thisindent:
                     del stack[-1]
-                tokentype, func_name, start = g.next()[0:3]
+                tokentype, func_name, start = token_generator.next()[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
                 if stack:
                     cur_class = stack[-1][0]
                     if isinstance(cur_class, Class):
                         # it's a method
-                        cur_method = Method(self, func_name, self.filename, decorated, lineno)
+                        cur_method = Method(self, func_name,
+                                            self.filename, decorated, lineno)
                         if decorated:
                             decorated = False
                             cur_method.decorated_from = decorated_from
                         cur_class.methods.append(cur_method)
-                        stack.append((cur_method, thisindent))  # Marker for nested fns
-                    # else it's a nested def
-
+                        # Marker for nested fns
+                        stack.append((cur_method, thisindent))
+                # else it's a nested def
                 else:
                     # it's a function
                     cur_function = Function(self, func_name, self.filename, decorated, lineno)
