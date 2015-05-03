@@ -1,5 +1,10 @@
 .. image:: https://travis-ci.org/nlaurance/sourceparse.svg?branch=master
     :target: https://travis-ci.org/nlaurance/sourceparse
+    :alt: Build Status
+
+.. image:: https://readthedocs.org/projects/sourceparse/badge/?version=latest
+    :target: https://readthedocs.org/projects/sourceparse/?badge=latest
+    :alt: Documentation Status
 
 sourceparse
 ===========
