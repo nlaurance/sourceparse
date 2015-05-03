@@ -6,6 +6,10 @@
     :target: https://readthedocs.org/projects/sourceparse/?badge=latest
     :alt: Documentation Status
 
+.. image:: https://coveralls.io/repos/nlaurance/sourceparse/badge.svg
+    :target: https://coveralls.io/r/nlaurance/sourceparse
+
+
 sourceparse
 ===========
 
@@ -171,3 +175,8 @@ let's put the parser back to normal
 >>> CodeCollector._readfile = original
 
 
+links
+~~~~~
+
+Source: https://github.com/nlaurance/sourceparse
+Doc: http://sourceparse.readthedocs.org/
