@@ -11,4 +11,4 @@ install:
 script: nosetests --with-coverage --cover-erase --cover-package=sourceparse
 
 after_success:
-    - coveralls
+  - coveralls
