@@ -13,9 +13,11 @@
 sourceparse
 ===========
 
-a personal adaptation of pyclbr from the standard python lib
+A personal adaptation of ``pyclbr`` from the standard Python library.
 
-let's say we want to analyze a source file like this one::
+Let's say we want to analyze a source file like this one:
+
+.. code-block:: python
 
     >>> source = '''
     ... class MixinUser(Sub2, Mixin):
@@ -42,12 +44,16 @@ let's say we want to analyze a source file like this one::
     ...     return
     ... '''
 
-Of course we'll start by importing the tool
+Of course, we'll start by importing the tool:
+
+.. code-block:: python
 
     >>> from sourceparse import CodeCollector
     >>> from pprint import pprint
 
-for the purpose of this documentation we'll override the _readfile method::
+For the purpose of this documentation, we'll override the ``_readfile`` method:
+
+.. code-block:: python
 
     >>> def override(foo): return [s+'\n' for s in source.split('\n')]
     ...
@@ -56,20 +62,24 @@ for the purpose of this documentation we'll override the _readfile method::
 
 
 
-instanciation
+Instantiation
 -------------
 
-let's instantiate a parser, normally we would pass a path to the file to analyze::
+Let's instantiate a parser. Normally, we would pass in a path to the file we wish to analyze:
+
+.. code-block:: python
 
     >>> parser=CodeCollector("source")
 
-Access to members
+Access to Members
 -----------------
 
 Classes
 ~~~~~~~
 
-we can now access a list of the classes defined in the module::
+We can now access a list of the classes defined in the module:
+
+.. code-block:: python
 
     >>> parser.classes
     [Class MixinUser: from 2 to 19
@@ -79,58 +89,80 @@ we can now access a list of the classes defined in the module::
 Methods
 ~~~~~~~
 
-each class::
+Each class:
+
+.. code-block:: python
 
     >>> mix = parser.classes[0]
 
-can list its methods::
+Can list its methods:
+
+.. code-block:: python
 
     >>> mix.methods
     [Method method1: from 6 to 10
     , Method method2: from 13 to 19
     	decorated from 11 to 13]
 
-each method::
+Each method:
+
+.. code-block:: python
 
     >>> m2 = mix.methods[1]
 
-has a name::
+Has a name:
+
+.. code-block:: python
 
     >>> m2.name
     'method2'
 
-a start line in the file::
+A start line in the file:
+
+.. code-block:: python
 
     >>> m2.from_line
     13
 
 
-an end line::
+An end line:
+
+.. code-block:: python
 
     >>> m2.to_line
     19
 
-wa can access its docstring::
+We can access its docstring:
+
+.. code-block:: python
 
     >>> m2.docstring
     'method2 of MixinUser\n    '
 
-decorators::
+Decorators:
+
+.. code-block:: python
 
     >>> m2.decorators
     ['    @manytimes\n', '    @decorated\n']
 
-arguments, excluding self::
+Arguments, excluding self:
+
+.. code-block:: python
 
     >>> m2.args
     ['foo']
 
-and keyword arguments::
+Keyword arguments:
+
+.. code-block:: python
 
     >>> m2.kwargs
     {'bar': 'None'}
 
-and its complete source, excluding decorators::
+Its complete source, excluding decorators:
+
+.. code-block:: python
 
     >>> pprint(m2.source)
     ['    def method2(self, foo, bar=None):\n',
@@ -141,12 +173,14 @@ and its complete source, excluding decorators::
      '# comment\n',
      '\n']
 
-.. note:: The inline comment at the same level is included
+.. note:: The inline comment at the same level is included.
 
 Functions
 ~~~~~~~~~
 
-the module functions provide the same features::
+The module functions provide the same features:
+
+.. code-block:: python
 
     >>> parser.functions
     [Function my_function: from 20 to 24
@@ -170,13 +204,15 @@ the module functions provide the same features::
      '    return\n',
      '\n']
 
-let's put the parser back to normal
+Let's reset the parser back to normal:
+
+.. code-block:: python
 
 >>> CodeCollector._readfile = original
 
 
-links
+Links
 ~~~~~
 
-Source: https://github.com/nlaurance/sourceparse
-Doc: http://sourceparse.readthedocs.org/
+* Source: https://github.com/nlaurance/sourceparse
+* Doc: http://sourceparse.readthedocs.org/
