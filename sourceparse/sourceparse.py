@@ -4,18 +4,19 @@ a personal adaptation of pyclbr from the standard python lib
 http://docutils.sourceforge.net/sandbox/davidg/docutils/readers/python/moduleparser.py
 """
 
-import tokenize
 import ast
 import re
+import tokenize
 
-args_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
-kwargs_re = re.compile(r'^\s*def \w*\((.*)\):', re.MULTILINE | re.DOTALL)
+args_re = re.compile(r"^\s*def \w*\((.*)\):", re.MULTILINE | re.DOTALL)
+kwargs_re = re.compile(r"^\s*def \w*\((.*)\):", re.MULTILINE | re.DOTALL)
 
 
 class CodeChunk(object):
-    """ base class to represent a Python source object
+    """base class to represent a Python source object
     be it a class function or method
     """
+
     def __init__(self, parser, name, file_name, decorated_from, from_line):
         self.name = name
         self.file = file_name
@@ -26,26 +27,28 @@ class CodeChunk(object):
 
     @property
     def source(self):
-        return self.parser.lines[self.from_line - 1:self.to_line]
+        return self.parser.lines[self.from_line - 1 : self.to_line]
 
     @property
     def decorators(self):
         if self.decorated_from:
-            return self.parser.lines[self.decorated_from - 1:self.from_line - 1]
+            return self.parser.lines[self.decorated_from - 1 : self.from_line - 1]
         return []
 
     def __repr__(self):
-        msg = '{0} {1}: from {2} to {3}\n' \
-            .format(self.__class__.__name__, self.name, self.from_line, self.to_line)
+        msg = "{0} {1}: from {2} to {3}\n".format(
+            self.__class__.__name__, self.name, self.from_line, self.to_line
+        )
         if self.decorated_from:
-            msg += '    decorated from {0} to {1}' \
-                .format(self.decorated_from, self.from_line)
+            msg += "    decorated from {0} to {1}".format(
+                self.decorated_from, self.from_line
+            )
         return msg
 
 
 class Class(CodeChunk):
-    """ Class to represent a Python class.
-    """
+    """Class to represent a Python class."""
+
     def __init__(self, parser, name, file_name, decorated_from, from_line):
         super(Class, self).__init__(parser, name, file_name, decorated_from, from_line)
         self.methods = []
@@ -54,8 +57,8 @@ class Class(CodeChunk):
     def docstring(self):
         first_line = self.source[0]
         indent = len(first_line) - len(first_line.lstrip())
-        dedented = [l[indent:] for l in self.source if not l.startswith('#')]
-        src = ''.join(dedented)
+        dedented = [l[indent:] for l in self.source if not l.startswith("#")]
+        src = "".join(dedented)
         parsed = ast.parse(src)
         ast_def = [node for node in parsed.body if isinstance(node, ast.ClassDef)][0]
         doc = ast.get_docstring(ast_def)
@@ -64,14 +67,14 @@ class Class(CodeChunk):
 
 
 class Method(CodeChunk):
-    """ class for methods
-    """
+    """class for methods"""
+
     @property
     def docstring(self):
         first_line = self.source[0]
         indent = len(first_line) - len(first_line.lstrip())
-        dedented = [l[indent:] for l in self.source if not l.startswith('#')]
-        src = ''.join(dedented)
+        dedented = [l[indent:] for l in self.source if not l.startswith("#")]
+        src = "".join(dedented)
         parsed = ast.parse(src)
         ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
         doc = ast.get_docstring(ast_def)
@@ -81,52 +84,50 @@ class Method(CodeChunk):
     def _all_args(self):
         arg_names = []
         kwargs = {}
-        src = ''.join(self.source)
+        src = "".join(self.source)
         m = args_re.search(src)
         if m is not None:
             args = m.groups()[0]
-            for arg_line in args.split('\n'):
-                for arg_expr in arg_line.split(','):
-                    with_default = arg_expr.split('=')
+            for arg_line in args.split("\n"):
+                for arg_expr in arg_line.split(","):
+                    with_default = arg_expr.split("=")
                     if len(with_default) > 1:
                         kwargs[with_default[0].strip()] = with_default[1].strip()
                     else:
                         arg_names.append(with_default[0].strip())
-        if 'self' in arg_names:
-            arg_names.remove('self')
+        if "self" in arg_names:
+            arg_names.remove("self")
         return arg_names, kwargs
 
     @property
     def args(self):
-        """ returns a list of args names
+        """returns a list of args names
         ['arg1', 'arg2', 'adfd', 'azert']
         """
         return self._all_args()[0]
 
     @property
     def kwargs(self):
-        """ returns a dict of kwarg: default
+        """returns a dict of kwarg: default
         {'arg1':'value', 'arg2':'value', }
         """
         return self._all_args()[1]
 
 
 class Function(Method):
-    """ class for module level function
-    """
+    """class for module level function"""
+
     @property
     def docstring(self):
-        src = ''.join(self.source)
+        src = "".join(self.source)
         parsed = ast.parse(src)
-        ast_def = [node for node in parsed.body
-                   if isinstance(node, ast.FunctionDef)][0]
+        ast_def = [node for node in parsed.body if isinstance(node, ast.FunctionDef)][0]
         doc = ast.get_docstring(ast_def)
         doc = doc if doc is not None else ""
         return doc
 
 
 class CodeCollector(object):
-
     def __init__(self, filename):
         self.filename = filename
         self.module_objects = []
@@ -136,27 +137,23 @@ class CodeCollector(object):
 
     @property
     def classes(self):
-        return filter(lambda x: isinstance(x, Class),
-                      self.module_objects)
+        return filter(lambda x: isinstance(x, Class), self.module_objects)
 
     @property
     def functions(self):
-        return filter(lambda x: isinstance(x, Function),
-                      self.module_objects)
+        return filter(lambda x: isinstance(x, Function), self.module_objects)
 
     def _readfile(self):
-        """  can be overriden for other backends
-        """
-        with open(self.filename, 'r') as fh:
+        """can be overriden for other backends"""
+        with open(self.filename, "r") as fh:
             return fh.readlines()
 
     def _lineread(self):
-        return self.linegen.next()
+        return next(self.linegen)
 
     # pylint:disable = too-many-branches
     def parse(self):
-        """ parse the code and populate self.module_objects
-        """
+        """parse the code and populate self.module_objects"""
         token_generator = tokenize.generate_tokens(self._lineread)
         stack = []
         decorated = False
@@ -173,21 +170,21 @@ class CodeCollector(object):
                         previous_obj.to_line = lineno - 1
                     del stack[-1]
 
-            if token == '@':
-                tokentype, decorator_name, start = token_generator.next()[0:3]
+            if token == "@":
+                tokentype, decorator_name, start = next(token_generator)[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
                 if not decorated:
                     decorated_from = start[0]  # only the first lineno
                     decorated = True
 
-            elif token == 'class':
+            elif token == "class":
                 lineno, thisindent = start
 
                 # close previous nested classes and defs
                 while stack and stack[-1][1] >= thisindent:
                     del stack[-1]
-                tokentype, class_name, start = token_generator.next()[0:3]
+                tokentype, class_name, start = next(token_generator)[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
 
@@ -200,20 +197,21 @@ class CodeCollector(object):
                     self.module_objects.append(cur_class)
                 stack.append((cur_class, thisindent))
 
-            elif token == 'def':
+            elif token == "def":
                 lineno, thisindent = start
                 # close previous nested classes and defs
                 while stack and stack[-1][1] >= thisindent:
                     del stack[-1]
-                tokentype, func_name, start = token_generator.next()[0:3]
+                tokentype, func_name, start = next(token_generator)[0:3]
                 if tokentype != tokenize.NAME:
                     continue  # Syntax error
                 if stack:
                     cur_class = stack[-1][0]
                     if isinstance(cur_class, Class):
                         # it's a method
-                        cur_method = Method(self, func_name,
-                                            self.filename, decorated, lineno)
+                        cur_method = Method(
+                            self, func_name, self.filename, decorated, lineno
+                        )
                         if decorated:
                             decorated = False
                             cur_method.decorated_from = decorated_from
@@ -223,7 +221,9 @@ class CodeCollector(object):
                 # else it's a nested def
                 else:
                     # it's a function
-                    cur_function = Function(self, func_name, self.filename, decorated, lineno)
+                    cur_function = Function(
+                        self, func_name, self.filename, decorated, lineno
+                    )
                     if decorated:
                         decorated = False
                         cur_function.decorated_from = decorated_from
