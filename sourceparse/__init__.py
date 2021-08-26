@@ -1,1 +1,1 @@
-from sourceparse import CodeCollector
+from sourceparse.sourceparse import CodeCollector
